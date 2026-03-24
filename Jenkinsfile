@@ -37,8 +37,9 @@ pipeline {
             steps {
                 sh """
                 export PATH=$PATH:/usr/local/bin
-                kubectl get nodes
-                kubectl apply -f mahesh.yml
+                /usr/local/bin/kubectl get nodes
+                /usr/local/bin/kubectl apply -f mahesh.yml
+                /usr/local/bin/kubectl rollout status deployment/bootstrap
                 """
             }
         }
