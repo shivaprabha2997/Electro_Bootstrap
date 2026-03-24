@@ -2,70 +2,59 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_USER = "mahesh2452"
-        IMAGE_NAME = "bootstrap"
-        IMAGE_TAG = "${BUILD_NUMBER}"
-        AWS_REGION = "us-east-1"
-        CLUSTER_NAME = "mycluster1"
+        DOCKER_IMAGE = "mahesh2452/bootstrap-app"
+        KUBE_CONFIG_CREDENTIALS = "kubeconfig-id"
     }
 
     stages {
 
-        stage('Checkout') {
+        stage('Checkout Code') {
             steps {
-                git branch: 'main', url: 'https://github.com/Mahesh1-code141/Electro_Bootstrap.git'
+                git 'https://github.com/Mahesh1-code141/Electro_Bootstrap.git'
             }
         }
 
-        stage('Build Image') {
+        stage('Build Docker Image') {
             steps {
-                sh '''
-                docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
-                '''
+                script {
+                    docker.build("${DOCKER_IMAGE}:${BUILD_NUMBER}")
+                }
             }
         }
 
-        stage('Push to DockerHub') {
+        stage('Push Docker Image') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'Docker_CRED', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
-                    sh '''
-                    echo "$PASS" | docker login -u "$USER" --password-stdin
-                    docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${DOCKER_USER}/${IMAGE_NAME}:${IMAGE_TAG}
-                    docker push ${DOCKER_USER}/${IMAGE_NAME}:${IMAGE_TAG}
-                    '''
+                script {
+                    docker.withRegistry('https://index.docker.io/v1/', 'Docker_CRED') {
+                        docker.image("${DOCKER_IMAGE}:${BUILD_NUMBER}").push()
+                    }
                 }
             }
         }
 
         stage('Deploy to Kubernetes') {
             steps {
-                sh '''
-                echo "Updating kubeconfig from EKS..."
-                aws eks --region $AWS_REGION update-kubeconfig --name $CLUSTER_NAME
+                withCredentials([file(credentialsId: "${KUBE_CONFIG_CREDENTIALS}", variable: 'KUBECONFIG')]) {
+                    sh """
+                        kubectl set image deployment/my-app my-app=${DOCKER_IMAGE}:${BUILD_NUMBER} --record
+                        kubectl apply -f mahesh.yml
+                    """
+                }
+            }
+        }
 
-                echo "Checking kubectl..."
-                kubectl version --client
-
-                echo "Cluster access check..."
-                kubectl get nodes
-
-                echo "Updating deployment image..."
-                kubectl set image deployment/bootstrap \
-                bootstrap=${DOCKER_USER}/${IMAGE_NAME}:${IMAGE_TAG} || true
-
-                echo "Applying YAML..."
-                kubectl apply -f mahesh.yml
-
-                echo "Checking rollout status..."
-                kubectl rollout status deployment/bootstrap
-                '''
+        stage('Verify Deployment') {
+            steps {
+                withCredentials([file(credentialsId: "${KUBE_CONFIG_CREDENTIALS}", variable: 'KUBECONFIG')]) {
+                    sh "kubectl rollout status deployment/my-app"
+                }
             }
         }
     }
 
     post {
         success {
-            echo "Deployment Successful ✅"
+            echo "Deployment Successful 🚀"
         }
         failure {
             echo "Deployment Failed ❌"
