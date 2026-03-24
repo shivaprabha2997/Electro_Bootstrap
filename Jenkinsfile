@@ -4,7 +4,9 @@ pipeline {
     environment {
         DOCKER_USER = "mahesh2452"
         IMAGE_NAME = "bootstrap"
-        IMAGE_TAG = "${BUILD_NUMBER}"   // better than latest
+        IMAGE_TAG = "${BUILD_NUMBER}"
+        AWS_REGION = "us-east-1"
+        CLUSTER_NAME = "mycluster1"
     }
 
     stages {
@@ -37,24 +39,26 @@ pipeline {
 
         stage('Deploy to Kubernetes') {
             steps {
-                withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')]) {
-                    sh '''
-                    export KUBECONFIG=$KUBECONFIG
+                sh '''
+                echo "Updating kubeconfig from EKS..."
+                aws eks --region $AWS_REGION update-kubeconfig --name $CLUSTER_NAME
 
-                    echo "Checking kubectl..."
-                    kubectl version --client
+                echo "Checking kubectl..."
+                kubectl version --client
 
-                    echo "Cluster access check..."
-                    kubectl get nodes
+                echo "Cluster access check..."
+                kubectl get nodes
 
-                    echo "Updating deployment image..."
-                    kubectl set image deployment/bootstrap \
-                    bootstrap=${DOCKER_USER}/${IMAGE_NAME}:${IMAGE_TAG} || true
+                echo "Updating deployment image..."
+                kubectl set image deployment/bootstrap \
+                bootstrap=${DOCKER_USER}/${IMAGE_NAME}:${IMAGE_TAG} || true
 
-                    echo "Applying YAML..."
-                    kubectl apply -f mahesh.yml
-                    '''
-                }
+                echo "Applying YAML..."
+                kubectl apply -f mahesh.yml
+
+                echo "Checking rollout status..."
+                kubectl rollout status deployment/bootstrap
+                '''
             }
         }
     }
