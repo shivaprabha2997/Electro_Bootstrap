@@ -36,7 +36,7 @@ pipeline {
 
         stage('Deploy to Kubernetes') {
             steps {
-                sh '/usr/bin/kubectl apply -f mahesh.yml'
+                sh 'kubectl apply -f mahesh.yml'
             }
         }
     }
