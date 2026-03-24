@@ -1,49 +1,81 @@
 pipeline {
-agent any
+    agent any
 
-environment {
-    DOCKER_IMAGE = "mahesh2452/electro_bootstrap_project_img"
-}
-
-stages {
-
-    stage('GIT CHECKOUT') {
-        steps {
-            git branch: 'main',
-            credentialsId: 'Github',
-            url: 'https://github.com/Mahesh1-code141/Electro_Bootstrap.git'
-        }
+    environment {
+        DOCKER_IMAGE = "your-dockerhub-username/electro-app"
+        DOCKER_TAG = "${BUILD_NUMBER}"
+        KUBE_CONFIG = credentials('kubeconfig')   // Jenkins credential
+        DOCKER_CREDS = credentials('Docker-CRED')
     }
 
-    stage('Docker Build') {
-        steps {
-            sh 'docker build -t $DOCKER_IMAGE:latest .'
-        }
-    }
+    stages {
 
-    stage('Docker Login') {
-        steps {
-            withCredentials([usernamePassword(credentialsId: 'Docker_CRED', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
-                sh 'echo $PASS | docker login -u $USER --password-stdin'
+        stage('Checkout Code') {
+            steps {
+                git url: 'https://github.com/Mahesh1-code141/Electro_K8s.git', branch: 'main'
+            }
+        }
+
+        stage('Build Application') {
+            steps {
+                sh 'echo "Build step (customize for your app)"'
+                // Example:
+                // sh 'npm install'
+                // sh 'mvn clean package'
+            }
+        }
+
+        stage('Docker Build') {
+            steps {
+                script {
+                    sh "docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} ."
+                }
+            }
+        }
+
+        stage('Docker Login & Push') {
+            steps {
+                script {
+                    sh """
+                    echo ${DOCKER_CREDS_PSW} | docker login -u ${DOCKER_CREDS_USR} --password-stdin
+                    docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
+                    """
+                }
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                script {
+                    sh """
+                    export KUBECONFIG=${KUBE_CONFIG}
+
+                    # Update image dynamically
+                    sed -i 's|IMAGE_PLACEHOLDER|${DOCKER_IMAGE}:${DOCKER_TAG}|g' k8s/deployment.yaml
+
+                    kubectl apply -f k8s/deployment.yaml
+                    kubectl apply -f k8s/service.yaml
+                    """
+                }
+            }
+        }
+
+        stage('Verify Deployment') {
+            steps {
+                sh """
+                kubectl get pods
+                kubectl get svc
+                """
             }
         }
     }
 
-    stage('Push Image') {
-        steps {
-            sh 'docker push $DOCKER_IMAGE:latest'
+    post {
+        success {
+            echo "✅ Deployment Successful!"
+        }
+        failure {
+            echo "❌ Pipeline Failed!"
         }
     }
-
-    stage('Deploy Container') {
-        steps {
-            sh '''
-            docker rm -f electro_cont || true
-	    docker run -d -p 2010:80 --name electro_cont $DOCKER_IMAGE:latest
-            '''
-        }
-    }
-
-}
-
 }
