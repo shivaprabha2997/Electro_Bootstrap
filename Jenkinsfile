@@ -39,7 +39,7 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 // Use full path to kubectl to ensure Jenkins finds it
-                sh '/usr/local/bin/kubectl apply -f mahesh.yml'
+                sh 'kubectl apply -f mahesh.yml''
             }
         }
     }
