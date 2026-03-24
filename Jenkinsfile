@@ -36,11 +36,8 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 sh """
-                aws eks --region us-east-1 update-kubeconfig --name mycluster1
-                export PATH=$PATH:/usr/local/bin
-                /usr/local/bin/kubectl get nodes
-                /usr/local/bin/kubectl apply -f mahesh.yml
-                /usr/local/bin/kubectl rollout status deployment/bootstrap
+                sh 'kubectl apply -f mahesh.yml'
+                sh 'kubectl rollout status deployment/electro-app'
                 """
             }
         }
