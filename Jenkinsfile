@@ -5,7 +5,7 @@ pipeline {
         DOCKER_IMAGE = "your-dockerhub-username/electro-app"
         DOCKER_TAG = "${BUILD_NUMBER}"
         KUBE_CONFIG = credentials('kubeconfig')   // Jenkins credential
-        DOCKER_CREDS = credentials('Docker-CRED')
+        DOCKER_CREDS = credentials('Docker_CRED')
     }
 
     stages {
