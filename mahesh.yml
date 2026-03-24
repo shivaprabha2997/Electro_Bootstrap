@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: electro-app
+  name: bootstrap       
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
-      app: electro
+      app: bootstrap
   template:
     metadata:
       labels:
-        app: electro
+        app: bootstrap
     spec:
       containers:
-      - name: electro-container
+      - name: bootstrap
         image: mahesh2452/bootstrap:latest
         ports:
         - containerPort: 80   
@@ -25,7 +25,7 @@ metadata:
 spec:
   type: LoadBalancer
   selector:
-    app: electro
+    app: bootstrap
   ports:
     - protocol: TCP
       port: 80
