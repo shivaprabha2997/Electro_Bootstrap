@@ -1,55 +1,71 @@
 pipeline {
-    agent any
+agent any
 
-    environment {
-        DOCKER_USER = "mahesh2452"
-        IMAGE_NAME = "bootstrap"
-        IMAGE_TAG = "latest"
-        KUBECONFIG = "/var/lib/jenkins/.kube/config"
+```
+environment {
+    DOCKER_USER = "mahesh2452"
+    IMAGE_NAME = "bootstrap"
+    IMAGE_TAG = "latest"
+}
+
+stages {
+
+    stage('Checkout') {
+        steps {
+            git branch: 'main', url: 'https://github.com/Mahesh1-code141/Electro_Bootstrap.git'
+        }
     }
 
-    stages {
-
-        stage('Checkout') {
-            steps {
-                git branch: 'main', url: 'https://github.com/Mahesh1-code141/Electro_Bootstrap.git'
-            }
+    stage('Build Image') {
+        steps {
+            sh '''
+            docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
+            '''
         }
+    }
 
-        stage('Build Image') {
-            steps {
-                sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
-            }
-        }
-
-        stage('Push to DockerHub') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'Docker_CRED', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
-                    sh '''
-                    echo "$PASS" | docker login -u "$USER" --password-stdin
-                    docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${DOCKER_USER}/${IMAGE_NAME}:${IMAGE_TAG}
-                    docker push ${DOCKER_USER}/${IMAGE_NAME}:${IMAGE_TAG}
-                    '''
-                }
-            }
-        }
-
-        stage('Deploy to Kubernetes') {
-            steps {
+    stage('Push to DockerHub') {
+        steps {
+            withCredentials([usernamePassword(credentialsId: 'Docker_CRED', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
                 sh '''
-                export KUBECONFIG=$KUBE_CONFIG
-                kubectl apply -f mahesh.yaml
+                echo "$PASS" | docker login -u "$USER" --password-stdin
+                docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${DOCKER_USER}/${IMAGE_NAME}:${IMAGE_TAG}
+                docker push ${DOCKER_USER}/${IMAGE_NAME}:${IMAGE_TAG}
                 '''
             }
         }
     }
 
-    post {
-        success {
-            echo "Deployment Successful ✅"
-        }
-        failure {
-            echo "Deployment Failed ❌"
+    stage('Deploy to Kubernetes') {
+        steps {
+            withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')]) {
+                sh '''
+                export KUBECONFIG=$KUBECONFIG
+
+                echo "Current directory:"
+                pwd
+
+                echo "Files in workspace:"
+                ls -l
+
+                kubectl version --client
+                kubectl get nodes
+
+                kubectl apply -f $WORKSPACE/mahesh.yaml
+                '''
+            }
         }
     }
+}
+
+post {
+    success {
+        echo "Deployment Successful ✅"
+    }
+    failure {
+        echo "Deployment Failed ❌"
+    }
+}
+```
+
 }
