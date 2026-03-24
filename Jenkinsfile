@@ -52,7 +52,7 @@ pipeline {
                     bootstrap=${DOCKER_USER}/${IMAGE_NAME}:${IMAGE_TAG} || true
 
                     echo "Applying YAML..."
-                    kubectl apply -f mahesh.yaml
+                    kubectl apply -f mahesh.yml
                     '''
                 }
             }
