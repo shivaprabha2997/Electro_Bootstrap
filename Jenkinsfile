@@ -5,7 +5,6 @@ pipeline {
         DOCKER_USER = "mahesh2452"
         IMAGE_NAME = "bootstrap"
         IMAGE_TAG = "latest"
-        PATH = "/usr/local/bin:${env.PATH}"   // Ensure kubectl is in PATH
         KUBECONFIG = "/var/lib/jenkins/.kube/config"
     }
 
@@ -26,7 +25,6 @@ pipeline {
         stage('Push to DockerHub') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'Docker_CRED', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
-                    // Use single quotes for multi-line shell to avoid Groovy interpolation warnings
                     sh '''
                     echo "$PASS" | docker login -u "$USER" --password-stdin
                     docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${DOCKER_USER}/${IMAGE_NAME}:${IMAGE_TAG}
@@ -38,8 +36,9 @@ pipeline {
 
         stage('Deploy to Kubernetes') {
             steps {
-                // Use full path to kubectl to ensure Jenkins finds it
-                sh 'kubectl apply -f mahesh.yml'
+                sh '''
+                kubectl apply -f mahesh.yml
+                '''
             }
         }
     }
