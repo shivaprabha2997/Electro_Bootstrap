@@ -37,6 +37,7 @@ pipeline {
             steps {
                 sh """
                 sh 'kubectl apply -f mahesh.yml'
+                sh 'kubectl rollout status deployment/bootstrap'
                 sh 'kubectl rollout status deployment/electro-app'
                 """
             }
