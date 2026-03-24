@@ -37,7 +37,7 @@ pipeline {
             steps {
                 sh """
                 export KUBECONFIG=/var/lib/jenkins/.kube/config
-                kubectl apply -f mahesh.yml
+                /usr/local/bin/kubectl apply -f mahesh.yml
                 """
             }
         }
