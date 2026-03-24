@@ -39,7 +39,7 @@ stages {
         steps {
             sh '''
             docker rm -f electro_cont || true
-	    docker run -d -p 80:80 --name electro_cont $DOCKER_IMAGE:latest
+	    docker run -d -p 2010:80 --name electro_cont $DOCKER_IMAGE:latest
             '''
         }
     }
