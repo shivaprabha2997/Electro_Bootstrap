@@ -21,27 +21,26 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'Docker_CRED', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
                     sh '''
                     echo "$PASS" | docker login -u "$USER" --password-stdin
-                    docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${DOCKER_USER}/${IMAGE_NAME}:${IMAGE_TAG}
-                    docker push ${DOCKER_USER}/${IMAGE_NAME}:${IMAGE_TAG}
+                    docker tag gadgets:latest shivadocker2997/gadgets:latest
+                    docker push shivadocker2997/gadgets:latest
                     '''
                 }
             }
         }
         stage('Deploy to Kubernetes') {
             steps {
-                sh '''
-                kubectl apply -f mahesh.yml
-                kubectl rollout status deployment/bootstrap
-                '''
+                withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')]) {
+                    sh 'kubectl apply -f mahesh.yml --validate=false'
+                }
             }
         }
     }
     post {
         success {
-            echo "Deployment Successful "
+            echo "Deployment Successful"
         }
         failure {
-            echo "Deployment Failed "
+            echo "Deployment Failed"
         }
     }
 }
