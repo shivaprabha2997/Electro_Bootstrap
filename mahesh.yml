@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: bootstrap
-        image: mahesh2452/bootstrap:latest
+        image: shivadocker2997/gadgets:latest
         ports:
         - containerPort: 80   
 ---
